@@ -4,6 +4,7 @@ import '../../features/auth/login_page.dart';
 import '../services/auth_service.dart';
 import '../../app.dart';
 import '../../features/profile/edit_profile_page.dart';
+import '../../features/profile/storage_page.dart';
 import '../services/media_service.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -147,7 +148,7 @@ class _AppDrawerState extends State<AppDrawer> {
               children: [
                 _buildMenuItem(context, 'Edit Profile', Icons.edit_outlined),
                 const Divider(indent: 20, endIndent: 20, height: 1),
-                _buildMenuItem(context, 'Settings', Icons.settings_outlined),
+                _buildMenuItem(context, 'Storage', Icons.storage_rounded),
                 const Divider(indent: 20, endIndent: 20, height: 1),
                 _buildDarkThemeItem(context),
               ],
@@ -212,6 +213,11 @@ class _AppDrawerState extends State<AppDrawer> {
           if (mounted) {
              _loadUserProfile();
           }
+        } else if (title == 'Storage') {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const StoragePage()),
+          );
         }
       },
     );
