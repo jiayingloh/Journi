@@ -59,11 +59,15 @@ class _StoragePageState extends State<StoragePage> {
     try {
       final tempDir = await getTemporaryDirectory();
       if (tempDir.existsSync()) {
-        await for (var entity in tempDir.list(recursive: true, followLinks: false)) {
-          if (entity is File) {
-            await entity.delete();
-          } else if (entity is Directory) {
-            await entity.delete(recursive: true);
+        await for (var entity in tempDir.list(recursive: false, followLinks: false)) {
+          try {
+            if (entity is File) {
+              await entity.delete();
+            } else if (entity is Directory) {
+              await entity.delete(recursive: true);
+            }
+          } catch (e) {
+            debugPrint('Ignored cache cleanup error: $e');
           }
         }
       }
