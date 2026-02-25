@@ -647,6 +647,46 @@ mixin TripDetailLogic on State<TripDetailPage> {
     }
   }
 
+  Future<void> _removeMember(String memberId, String memberName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Member'),
+        content: Text('Are you sure you want to remove $memberName from this trip?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    if (mounted) setState(() => _isLoading = true);
+    
+    try {
+      await _supabase
+          .from('user_trips')
+          .delete()
+          .eq('trip_id', widget.tripId)
+          .eq('user_id', memberId);
+
+      if (mounted) {
+        setState(() {
+          _members.removeWhere((m) => m['id'] == memberId);
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$memberName removed successfully.')));
+        _fetchTripData(refresh: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error removing member: $e')));
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _leaveTrip() async {
     final confirm = await showDialog<bool>(
       context: context,

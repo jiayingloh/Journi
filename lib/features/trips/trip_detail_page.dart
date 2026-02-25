@@ -512,6 +512,8 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
 
 
   Widget _buildMembersList() {
+    final amICreator = _creatorId != null && _supabase.auth.currentUser?.id == _creatorId;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       sliver: MultiSliver(
@@ -605,15 +607,10 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                           )
                         : null,
-                    trailing: !isCreator
+                    trailing: (amICreator && !isCreator)
                         ? IconButton(
                             icon: const Icon(Icons.person_remove_outlined, color: Colors.red),
-                            onPressed: () {
-                              // TODO: Implement remove member
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Remove member feature coming soon')),
-                              );
-                            },
+                            onPressed: () => _removeMember(userId, name),
                           )
                         : null,
                   ),
