@@ -81,45 +81,28 @@ class UploadProvider extends ChangeNotifier {
     // Sequential is safer for reliability, parallel is faster.
     // Let's do batches of 3 for compromise.
     
-    // Chunked Concurrent Processing with Auto-Retry (Fast + Safe)
+    // Sequential Processing (Safer, prevents Supabase Edge function rate limits and B2 database conflicts)
     int processed = 0;
     final safeUserTripId = userTripId!;
-    const int batchSize = 3; // Upload 3 files at same time
     
-    for (var i = 0; i < files.length; i += batchSize) {
-      final end = (i + batchSize < files.length) ? i + batchSize : files.length;
-      final batch = files.sublist(i, end);
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
       
-      _statusMessage = 'Uploading ${i + 1}-$end of $_totalFiles...';
+      _statusMessage = 'Uploading ${i + 1} of $_totalFiles...';
       notifyListeners();
       FlutterBackgroundService().invoke('updateNotification', {'message': _statusMessage});
 
-      await Future.wait(batch.map((file) async {
-        bool success = false;
-        int retries = 3;
-        
-        while (retries > 0 && !success) {
-          success = await _processSingleFile(file, safeUserTripId);
-          if (!success) {
-             retries--;
-             if (retries > 0) {
-                // If Edge Function rate limits, wait up to 1 second before silent retry
-                await Future.delayed(const Duration(milliseconds: 1000));
-             }
-          }
-        }
-        
-        if (success) {
-          processed++;
-          _completedFiles = processed;
-          notifyListeners(); 
-        } else {
-          debugPrint('Failed to upload ${file.path} permanently after 3 retries.');
-        }
-      }));
+      bool success = await _processSingleFile(file, safeUserTripId);
+      if (success) {
+        processed++;
+        _completedFiles = processed;
+        notifyListeners(); 
+      } else {
+        debugPrint('Failed to upload ${file.path}');
+      }
       
-      // Small baseline 400ms delay between *batches* to keep the server stable
-      await Future.delayed(const Duration(milliseconds: 400));
+      // Small 300ms delay to prevent overwhelming Supabase Edge Function rate limits
+      await Future.delayed(const Duration(milliseconds: 300));
     }
     
     _finish(true, 'Upload complete!');
