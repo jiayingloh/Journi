@@ -156,17 +156,31 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                                 memCacheHeight: 400,
                               ),
                             )
-                          : const Icon(Icons.image, size: 100, color: Colors.white24),
+                          : Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                child: Text(
+                                  _localTitle,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
                     ),
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black54],
+                    if (_coverUrl != null)
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black54],
+                          ),
                         ),
                       ),
-                    ),
                     Positioned(
                       bottom: 20,
                       left: 20,
@@ -175,23 +189,25 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            _localTitle,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
+                          if (_coverUrl != null) ...[
+                            Text(
+                              _localTitle,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _localDate,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                            const SizedBox(height: 8),
+                            Text(
+                              _localDate,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
+                            const SizedBox(height: 12),
+                          ],
                           // Small avatars row (always visible in header)
                           Row(
                             mainAxisSize: MainAxisSize.min,
