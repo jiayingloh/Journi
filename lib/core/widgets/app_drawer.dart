@@ -101,9 +101,16 @@ class _AppDrawerState extends State<AppDrawer> {
                     backgroundImage: _avatarUrl != null 
                       ? NetworkImage(_avatarUrl!) 
                       : null,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor: _avatarUrl == null ? Theme.of(context).primaryColor : Colors.transparent,
                     child: _avatarUrl == null
-                        ? const Icon(Icons.person, color: Colors.grey, size: 30)
+                        ? Text(
+                            _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
                         : null,
                   ),
                 ),
