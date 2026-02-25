@@ -83,6 +83,10 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                   ),
       );
     }
+    
+    // Safely parse cover photo URL to avoid host crash on 'empty' strings
+    final String parsedCoverUrl = (_coverUrl != null && _coverUrl!.trim().isNotEmpty) ? MediaService.getPublicUrl(_coverUrl!) : '';
+    final bool hasCover = parsedCoverUrl.isNotEmpty;
 
     // 2. Standard Mode (Cover, Tabs, FAB)
     return PopScope(
@@ -148,10 +152,10 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                   children: [
                     Container(
                       color: widget.coverColor ?? Colors.blue,
-                      child: (_coverUrl != null && _coverUrl!.isNotEmpty)
+                      child: hasCover
                           ? RepaintBoundary(
                               child: CachedNetworkImage(
-                                imageUrl: MediaService.getPublicUrl(_coverUrl!),
+                                imageUrl: parsedCoverUrl,
                                 fit: BoxFit.cover,
                                 memCacheHeight: 400,
                               ),
@@ -171,7 +175,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                               ),
                             ),
                     ),
-                    if (_coverUrl != null && _coverUrl!.isNotEmpty)
+                    if (hasCover)
                       Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -189,7 +193,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_coverUrl != null && _coverUrl!.isNotEmpty) ...[
+                          if (hasCover) ...[
                             Text(
                               _localTitle,
                               style: const TextStyle(
