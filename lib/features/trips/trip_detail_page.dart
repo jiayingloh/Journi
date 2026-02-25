@@ -148,7 +148,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                   children: [
                     Container(
                       color: widget.coverColor ?? Colors.blue,
-                      child: _coverUrl != null
+                      child: (_coverUrl != null && _coverUrl!.isNotEmpty)
                           ? RepaintBoundary(
                               child: CachedNetworkImage(
                                 imageUrl: MediaService.getPublicUrl(_coverUrl!),
@@ -171,7 +171,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                               ),
                             ),
                     ),
-                    if (_coverUrl != null)
+                    if (_coverUrl != null && _coverUrl!.isNotEmpty)
                       Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -189,7 +189,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_coverUrl != null) ...[
+                          if (_coverUrl != null && _coverUrl!.isNotEmpty) ...[
                             Text(
                               _localTitle,
                               style: const TextStyle(
