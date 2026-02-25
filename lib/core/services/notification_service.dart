@@ -104,15 +104,20 @@ class NotificationService {
 
   // --- API Methods ---
 
+  static Stream<List<Map<String, dynamic>>>? _notificationStream;
+
   static Stream<List<Map<String, dynamic>>> getNotificationsStream() {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return Stream.value([]);
     
-    return _supabase
+    _notificationStream ??= _supabase
         .from('notifications')
         .stream(primaryKey: ['id'])
         .eq('recipient_id', userId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .asBroadcastStream();
+        
+    return _notificationStream!;
   }
 
   static Future<void> sendTripInvite({
