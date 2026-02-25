@@ -81,31 +81,28 @@ class UploadProvider extends ChangeNotifier {
     // Sequential is safer for reliability, parallel is faster.
     // Let's do batches of 3 for compromise.
     
-    // Parallel Processing (Batch of 3)
+    // Sequential Processing (Safer, prevents Supabase Edge function rate limits and B2 database conflicts)
     int processed = 0;
     final safeUserTripId = userTripId!;
-    final batchSize = 3;
-    for (var i = 0; i < files.length; i += batchSize) {
-      final end = (i + batchSize < files.length) ? i + batchSize : files.length;
-      final batch = files.sublist(i, end);
+    
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
       
-      _statusMessage = 'Uploading ${i + 1}-${end} of $_totalFiles...';
+      _statusMessage = 'Uploading ${i + 1} of $_totalFiles...';
       notifyListeners();
       FlutterBackgroundService().invoke('updateNotification', {'message': _statusMessage});
 
-      await Future.wait(batch.map((file) async {
-         bool success = await _processSingleFile(file, safeUserTripId);
-         if (success) {
-           processed++;
-           _completedFiles = processed;
-           // Notify safely mainly for progress bar, not every single file to avoid stutter
-           if (processed % 2 == 0) notifyListeners(); 
-         } else {
-           debugPrint('Failed to upload ${file.path}');
-         }
-      }));
+      bool success = await _processSingleFile(file, safeUserTripId);
+      if (success) {
+        processed++;
+        _completedFiles = processed;
+        notifyListeners(); 
+      } else {
+        debugPrint('Failed to upload ${file.path}');
+      }
       
-      notifyListeners(); // Ensure progress updates at end of batch
+      // Small 300ms delay to prevent overwhelming Supabase Edge Function rate limits
+      await Future.delayed(const Duration(milliseconds: 300));
     }
     
     _finish(true, 'Upload complete!');
@@ -146,7 +143,7 @@ class UploadProvider extends ChangeNotifier {
 
            if (uint8list != null) {
              final temp = await getTemporaryDirectory();
-             final thumbFile = File('${temp.path}/${DateTime.now().millisecondsSinceEpoch}_thumb.jpg');
+              final thumbFile = File('${temp.path}/${DateTime.now().millisecondsSinceEpoch}_${file.hashCode}_thumb.jpg');
              await thumbFile.writeAsBytes(uint8list);
              
              // Upload Thumbnail
@@ -163,7 +160,7 @@ class UploadProvider extends ChangeNotifier {
          // 1. Generate Small Thumbnail (Grid) - Aggressive compression
          try {
            final temp = await getTemporaryDirectory();
-           final thumbName = '${DateTime.now().millisecondsSinceEpoch}_thumb_img.jpg';
+           final thumbName = '${DateTime.now().millisecondsSinceEpoch}_${file.hashCode}_thumb_img.jpg';
            final targetPath = '${temp.path}/$thumbName';
            
            final result = await FlutterImageCompress.compressAndGetFile(
