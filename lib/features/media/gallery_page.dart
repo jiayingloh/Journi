@@ -96,13 +96,9 @@ class _GalleryPageState extends State<GalleryPage> {
           builder: (context) {
             return IconButton(
               icon: const Icon(Icons.menu),
-                 onPressed: () async {
-                   await Navigator.push(
-                     context,
-                     MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                   );
-                   _fetchJoinedTrips();
-                 },
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
             );
           }
         ),
