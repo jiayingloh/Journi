@@ -665,11 +665,16 @@ mixin TripDetailLogic on State<TripDetailPage> {
     if (mounted) setState(() => _isLoading = true);
     
     try {
-      await _supabase
+      final response = await _supabase
           .from('user_trips')
           .delete()
           .eq('trip_id', widget.tripId)
-          .eq('user_id', memberId);
+          .eq('user_id', memberId)
+          .select();
+
+      if (response.isEmpty) {
+        throw 'Permission denied! Row Level Security (RLS) blocked the deletion because you do not have permission to delete this member. Check your database policies.';
+      }
 
       if (mounted) {
         setState(() {
