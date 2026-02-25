@@ -55,7 +55,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final status = notif['status'] as String? ?? 'pending';
     final message = notif['message'] as String? ?? '';
     final type = notif['type'] as String? ?? '';
-    final createdAt = DateTime.tryParse(notif['created_at'] ?? 'now') ?? DateTime.now();
+    final createdAt = (DateTime.tryParse(notif['created_at'] ?? '') ?? DateTime.now()).toLocal();
 
     final isActionable = status == 'pending' && type == 'trip_invite';
 
