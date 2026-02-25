@@ -1,0 +1,52 @@
+name: Build Unsigned iOS IPA
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  build_ios_ipa:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS Release (No Codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package to Unsigned .ipa
+        run: |
+          # 1. Locate the built Runner.app for physical devices
+          APP_DIR=$(find build/ios/iphoneos -name "Runner.app" -type d | head -n 1)
+          
+          if [ -z "$APP_DIR" ]; then
+            echo "Failed to find Runner.app! Listing directory contents:"
+            find build/ios/iphoneos
+            exit 1
+          fi
+          
+          echo "Found app bundle at: $APP_DIR"
+          
+          # 2. Create the standard Payload directory structure required for an IPA
+          mkdir -p Payload
+          cp -r "$APP_DIR" Payload/
+          
+          # 3. Zip the Payload folder into an .ipa file
+          zip -r JourniApp_Unsigned.ipa Payload
+          
+          # 4. Save path
+          echo "IPA_PATH=$PWD/JourniApp_Unsigned.ipa" >> $GITHUB_ENV
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-ipa
+          path: ${{ env.IPA_PATH }}
