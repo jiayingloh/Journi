@@ -131,6 +131,22 @@ class NotificationService {
     });
   }
 
+  static Future<void> sendRemovalNotification({
+    required String tripId,
+    required String tripName,
+    required String recipientId,
+  }) async {
+    final senderId = _supabase.auth.currentUser?.id;
+    await _supabase.from('notifications').insert({
+      'recipient_id': recipientId,
+      'sender_id': senderId,
+      'trip_id': tripId,
+      'type': 'trip_removed',
+      'message': 'You were removed from trip "$tripName"',
+      'status': 'info',
+    });
+  }
+
   static Future<void> acceptInvite(String notificationId, String tripId) async {
     final userId = _supabase.auth.currentUser?.id;
     

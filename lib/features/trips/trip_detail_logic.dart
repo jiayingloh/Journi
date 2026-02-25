@@ -681,6 +681,18 @@ mixin TripDetailLogic on State<TripDetailPage> {
           _members.removeWhere((m) => m['id'] == memberId);
           _isLoading = false;
         });
+        
+        // Notify the user they were removed
+        try {
+          await NotificationService.sendRemovalNotification(
+            tripId: widget.tripId,
+            tripName: _localTitle,
+            recipientId: memberId,
+          );
+        } catch (e) {
+          debugPrint('Failed to send removal notification: $e');
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$memberName removed successfully.')));
         _fetchTripData(refresh: true);
       }

@@ -114,6 +114,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   IconData _getIconForType(String type) {
     switch (type) {
       case 'trip_invite': return Icons.group_add;
+      case 'trip_removed': return Icons.person_remove;
       default: return Icons.notifications;
     }
   }
