@@ -6,8 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../trips/create_trip_page.dart';
 import '../../core/services/media_service.dart';
-import '../../core/services/notification_service.dart';
-import '../notifications/notifications_page.dart';
+import '../../core/widgets/custom_app_bar.dart';
 
 class GalleryPage extends StatefulWidget {
   final bool isMainFeed;
@@ -69,65 +68,8 @@ class _GalleryPageState extends State<GalleryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.explore, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Journi',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          }
-        ),
-        actions: [
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: NotificationService.getNotificationsStream(),
-            builder: (context, snapshot) {
-              int unreadCount = 0;
-              if (snapshot.hasData && snapshot.data != null) {
-                unreadCount = snapshot.data!.where((n) => n['is_read'] != true).length;
-              }
-
-              return IconButton(
-                 onPressed: () async {
-                   await Navigator.push(
-                     context,
-                     MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                   );
-                   _fetchJoinedTrips();
-                 },
-                icon: Badge(
-                  isLabelVisible: unreadCount > 0,
-                  label: Text('$unreadCount'),
-                  child: const Icon(Icons.notifications),
-                ),
-              );
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        onNotificationReturn: _fetchJoinedTrips,
       ),
       body: RefreshIndicator(
         onRefresh: () async {

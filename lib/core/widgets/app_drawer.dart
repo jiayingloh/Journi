@@ -71,7 +71,7 @@ class _AppDrawerState extends State<AppDrawer> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    if (_avatarUrl != null) {
+                    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
                        showDialog(
                         context: context,
                         builder: (context) => Dialog(
@@ -98,15 +98,15 @@ class _AppDrawerState extends State<AppDrawer> {
                   },
                   child: CircleAvatar(
                     radius: 30,
-                    backgroundImage: _avatarUrl != null 
+                    backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty) 
                       ? NetworkImage(_avatarUrl!) 
                       : null,
-                    backgroundColor: _avatarUrl == null ? Theme.of(context).primaryColor : Colors.transparent,
-                    child: _avatarUrl == null
+                    backgroundColor: (_avatarUrl == null || _avatarUrl!.isEmpty) ? Colors.blue[100] : Colors.transparent,
+                    child: (_avatarUrl == null || _avatarUrl!.isEmpty)
                         ? Text(
                             _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Colors.blue[900],
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),

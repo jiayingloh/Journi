@@ -4,7 +4,7 @@ import '../../core/services/media_service.dart';
 import '../trips/trip_detail_page.dart';  // Import for navigation
 import '../../core/widgets/app_drawer.dart'; // Import AppDrawer
 import '../../core/services/notification_service.dart';
-import '../notifications/notifications_page.dart';
+import '../../core/widgets/custom_app_bar.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -137,64 +137,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final gridColors = [Colors.orange[200], Colors.red[200], Colors.blue[200], Colors.green[200]];
 
     return Scaffold(
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu), // 3 bar icon
-            onPressed: () {
-               // Open Drawer or similar if existed, or just show simple menu
-               Scaffold.of(context).openDrawer(); 
-            },
-          ),
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.explore, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Journi',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: NotificationService.getNotificationsStream(),
-            builder: (context, snapshot) {
-              int unreadCount = 0;
-              if (snapshot.hasData && snapshot.data != null) {
-                unreadCount = snapshot.data!.where((n) => n['is_read'] != true).length;
-              }
-
-              return IconButton(
-                onPressed: () async {
-                   await Navigator.push(
-                     context,
-                     MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                   );
-                   _loadProfile();
-                },
-                icon: Badge(
-                  isLabelVisible: unreadCount > 0,
-                  label: Text('$unreadCount'),
-                  child: const Icon(Icons.notifications),
-                ),
-              );
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        onNotificationReturn: _loadProfile,
       ),
       // Use the proper AppDrawer widget
       drawer: const AppDrawer(),
@@ -209,15 +153,15 @@ class _ProfilePageState extends State<ProfilePage> {
               // Profile Avatar
               CircleAvatar(
                 radius: 50,
-                backgroundColor: (_avatarUrl == null || _avatarUrl!.isEmpty) ? Theme.of(context).primaryColor : Colors.transparent,
+                backgroundColor: (_avatarUrl == null || _avatarUrl!.isEmpty) ? Colors.blue[100] : Colors.transparent,
                 backgroundImage: (_avatarUrl != null && _avatarUrl!.startsWith('http'))
                     ? NetworkImage(_avatarUrl!) 
                     : null,
                 child: (_avatarUrl == null || _avatarUrl!.isEmpty)
                         ? Text(
                             _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Colors.blue[900],
                               fontSize: 40,
                               fontWeight: FontWeight.bold,
                             ),

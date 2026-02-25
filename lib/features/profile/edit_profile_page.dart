@@ -242,12 +242,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   children: [
                     CircleAvatar(
                       radius: 60,
-                      backgroundColor: Colors.grey[200],
+                      backgroundColor: (_selectedImage == null && (_avatarUrl == null || _avatarUrl!.isEmpty)) ? Colors.blue[100] : Colors.transparent,
                       backgroundImage: _selectedImage != null
                           ? FileImage(_selectedImage!) as ImageProvider
-                          : (_avatarUrl != null ? NetworkImage(_avatarUrl!) as ImageProvider : null),
-                      child: (_selectedImage == null && _avatarUrl == null)
-                          ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                          : ((_avatarUrl != null && _avatarUrl!.isNotEmpty) ? NetworkImage(_avatarUrl!) as ImageProvider : null),
+                      child: (_selectedImage == null && (_avatarUrl == null || _avatarUrl!.isEmpty))
+                          ? Text(
+                              _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : 'U',
+                              style: TextStyle(
+                                color: Colors.blue[900],
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
                           : null,
                     ),
                     Positioned(
