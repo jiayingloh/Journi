@@ -67,10 +67,6 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AppDrawer(),
-      appBar: CustomAppBar(
-        onNotificationReturn: _fetchJoinedTrips,
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           setState(() => _isLoading = true);

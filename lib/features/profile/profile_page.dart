@@ -137,11 +137,6 @@ class _ProfilePageState extends State<ProfilePage> {
     final gridColors = [Colors.orange[200], Colors.red[200], Colors.blue[200], Colors.green[200]];
 
     return Scaffold(
-      appBar: CustomAppBar(
-        onNotificationReturn: _loadProfile,
-      ),
-      // Use the proper AppDrawer widget
-      drawer: const AppDrawer(),
       body: RefreshIndicator(
         onRefresh: _loadProfile,
         child: SingleChildScrollView(

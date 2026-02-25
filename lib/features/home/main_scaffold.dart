@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../features/media/gallery_page.dart';
 
-
 import '../../features/profile/profile_page.dart';
+import '../../core/widgets/app_drawer.dart';
+import '../../core/widgets/custom_app_bar.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -28,6 +29,13 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: CustomAppBar(
+        onNotificationReturn: () {
+          // Trigger a lightweight rebuild to catch any potential state changes
+          setState(() {}); 
+        },
+      ),
+      drawer: const AppDrawer(),
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
