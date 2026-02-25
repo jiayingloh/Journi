@@ -24,11 +24,29 @@ jobs:
 
       - name: Zip the .app bundle
         run: |
-          cd build/ios/iphonesimulator
+          # 1. Search for the actual location of Runner.app because Flutter moves it between versions
+          APP_DIR=$(find build/ios -name "Runner.app" -type d | head -n 1)
+          
+          if [ -z "$APP_DIR" ]; then
+            echo "Failed to find Runner.app! Listing directory contents:"
+            find build/ios
+            exit 1
+          fi
+          
+          echo "Found app bundle at: $APP_DIR"
+          
+          # 2. Extract the parent folder path so we can cleanly zip it
+          PARENT_DIR=$(dirname "$APP_DIR")
+          cd "$PARENT_DIR"
+          
+          # 3. Zip the app folder
           zip -r JourniApp.zip Runner.app
+          
+          # 4. Save the absolute path of the zip as an environment variable for the next step!
+          echo "ZIP_PATH=$PWD/JourniApp.zip" >> $GITHUB_ENV
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-app-zip
-          path: build/ios/iphonesimulator/JourniApp.zip
+          path: ${{ env.ZIP_PATH }}
