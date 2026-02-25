@@ -2,13 +2,29 @@ import 'package:flutter/material.dart';
 import '../../features/notifications/notifications_page.dart';
 import '../services/notification_service.dart';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback onNotificationReturn;
 
   const CustomAppBar({
     super.key,
     required this.onNotificationReturn,
   });
+
+  @override
+  State<CustomAppBar> createState() => _CustomAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _CustomAppBarState extends State<CustomAppBar> {
+  Stream<List<Map<String, dynamic>>>? _notificationStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationStream = NotificationService.getNotificationsStream();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +63,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         StreamBuilder<List<Map<String, dynamic>>>(
-          stream: NotificationService.getNotificationsStream(),
+          stream: _notificationStream,
           builder: (context, snapshot) {
             int unreadCount = 0;
             if (snapshot.hasData && snapshot.data != null) {
@@ -60,7 +76,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                    context,
                    MaterialPageRoute(builder: (_) => const NotificationsPage()),
                  );
-                 onNotificationReturn();
+                 widget.onNotificationReturn();
                },
               icon: Badge(
                 isLabelVisible: unreadCount > 0,
@@ -74,6 +90,4 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
