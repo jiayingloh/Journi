@@ -209,13 +209,20 @@ class _ProfilePageState extends State<ProfilePage> {
               // Profile Avatar
               CircleAvatar(
                 radius: 50,
-                backgroundColor: Colors.grey[200],
+                backgroundColor: (_avatarUrl == null || _avatarUrl!.isEmpty) ? Theme.of(context).primaryColor : Colors.transparent,
                 backgroundImage: (_avatarUrl != null && _avatarUrl!.startsWith('http'))
                     ? NetworkImage(_avatarUrl!) 
                     : null,
-                child: _avatarUrl == null 
-                    ? const Icon(Icons.person, size: 50, color: Colors.grey) 
-                    : null,
+                child: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                        ? Text(
+                            _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
               ),
               
               const SizedBox(height: 16),
