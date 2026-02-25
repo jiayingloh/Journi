@@ -14,6 +14,8 @@ mixin TripDetailLogic on State<TripDetailPage> {
   bool _isLoading = true;
 
   String? _coverUrl;
+  late String _localTitle;
+  late String _localDate;
 
   final _scrollController = ScrollController();
   int _page = 0;
@@ -37,6 +39,10 @@ mixin TripDetailLogic on State<TripDetailPage> {
   @override
   void initState() {
     super.initState();
+    _localTitle = widget.title;
+    _localDate = widget.date;
+    _tripNameController.text = _localTitle;
+    _tripDateController.text = _localDate;
     _coverUrl = widget.coverUrl;
     _fetchTripData();
     
@@ -342,7 +348,7 @@ mixin TripDetailLogic on State<TripDetailPage> {
     }
   }
 
-  Future<void> _downloadMedia(String mediaId, String? url, bool isVideo) async {
+  Future<void> _downloadMedia(String mediaId, String? url, bool isVideo, {bool showSnackbar = true}) async {
     if (url == null || _downloadedIds.contains(mediaId)) return;
     
     try {
@@ -351,7 +357,7 @@ mixin TripDetailLogic on State<TripDetailPage> {
          await Gal.requestAccess();
        }
        
-       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Downloading...'), duration: Duration(seconds: 1)));
+       if (showSnackbar && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Downloading...'), duration: Duration(seconds: 1)));
 
        // Download
        final response = await http.get(Uri.parse(url));
@@ -381,11 +387,47 @@ mixin TripDetailLogic on State<TripDetailPage> {
          setState(() {
            _downloadedIds.add(mediaId);
          });
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to Gallery!')));
+         if (showSnackbar) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to Gallery!')));
        }
     } catch (e) {
       debugPrint('Error downloading: $e');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download failed')));
+      if (showSnackbar && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download failed')));
+    }
+  }
+
+  Future<void> _downloadAllMedia() async {
+    if (_mediaItems.isEmpty) return;
+    
+    if (!await Gal.hasAccess()) {
+      await Gal.requestAccess();
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Starting bulk download... please wait.'), duration: Duration(seconds: 2))
+      );
+    }
+
+    int successCount = 0;
+    
+    // We do them sequentially to avoid exhausting API connections/memory or use chunks, but sequential is safer for mobile bulk
+    for (var item in _mediaItems) {
+      final url = item['public_url'];
+      final isVideo = item['media_type'] == 'video';
+      if (url != null && !_downloadedIds.contains(item['id'])) {
+        await _downloadMedia(item['id'], url, isVideo, showSnackbar: false);
+        successCount++;
+      }
+    }
+
+    if (mounted && successCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Successfully downloaded $successCount new items to Gallery!'))
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All items are already downloaded!'))
+      );
     }
   }
 
@@ -562,17 +604,67 @@ mixin TripDetailLogic on State<TripDetailPage> {
 
   Future<void> _updateTrip() async {
     try {
+      final newTitle = _tripNameController.text.trim();
       await _supabase.from('trips').update({
-        'trip_name': _tripNameController.text.trim(),
+        'trip_name': newTitle,
       }).eq('id', widget.tripId);
       
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Trip updated!')));
+      if (mounted) {
+        setState(() => _localTitle = newTitle);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Trip updated!')));
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
+  Future<void> _selectDate() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      final newStartDateStr = picked.start.toIso8601String();
+      final newEndDateStr = picked.end.toIso8601String();
+      final dateStr = '${DateFormat('MMM d, yyyy').format(picked.start)} - ${DateFormat('MMM d, yyyy').format(picked.end)}';
+      
+      try {
+        await _supabase.from('trips').update({
+          'start_date': newStartDateStr,
+          'end_date': newEndDateStr,
+        }).eq('id', widget.tripId);
+        if (mounted) {
+          setState(() {
+             _localDate = dateStr;
+             _tripDateController.text = _localDate;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Date updated!')));
+        }
+      } catch (e) {
+         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating date: $e')));
+      }
+    }
+  }
+
   Future<void> _leaveTrip() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave Trip?'),
+        content: const Text('Are you sure you want to leave this trip? You will no longer have access to its media unless invited again.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+             onPressed: () => Navigator.pop(context, true), 
+             style: TextButton.styleFrom(foregroundColor: Colors.red),
+             child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) return;
@@ -589,11 +681,50 @@ mixin TripDetailLogic on State<TripDetailPage> {
   }
 
   Future<void> _deleteTrip() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Trip?'),
+        content: const Text('This will permanently delete the trip and all media uploaded to it. This action cannot be undone. Are you sure?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+             onPressed: () => Navigator.pop(context, true), 
+             style: TextButton.styleFrom(foregroundColor: Colors.red),
+             child: const Text('Delete Trip'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleting trip entirely... this may take a moment.')));
+
+      // Fetch paths of all media to delete from B2 storage
+      final utRes = await _supabase.from('user_trips').select('id').eq('trip_id', widget.tripId);
+      final utIds = (utRes as List).map((e) => e['id'] as String).toList();
+      
+      if (utIds.isNotEmpty) {
+         final mediaRes = await _supabase.from('media').select('b2_path, thumbnail_path').filter('user_trip_id', 'in', utIds);
+         final List<dynamic> mediaItems = mediaRes;
+         
+         if (mediaItems.isNotEmpty) {
+            final paths = <String>[];
+            for (var m in mediaItems) {
+                if (m['b2_path'] != null) paths.add(m['b2_path'] as String);
+                if (m['thumbnail_path'] != null) paths.add(m['thumbnail_path'] as String);
+            }
+            // Delete actual files from Backblaze B2/Storage bucket
+            if (paths.isNotEmpty) await MediaService.deleteFiles(paths);
+         }
+      }
+
       await _supabase.from('trips').delete().eq('id', widget.tripId);
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting trip: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting trip: ${e.toString()}')));
     }
   }
 

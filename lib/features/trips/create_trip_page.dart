@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/supabase_config.dart';
 import '../../core/services/media_service.dart';
+import '../../core/services/notification_service.dart';
 import 'invite_people_page.dart';
 
 class CreateTripPage extends StatefulWidget {
@@ -333,12 +334,17 @@ class _CreateTripPageState extends State<CreateTripPage> {
 
       // 4. Handle Invites
       if (_invitedPeople.isNotEmpty) {
-        final List<Map<String, dynamic>> invites = _invitedPeople.map((p) => {
-          'user_id': p['id'],
-          'trip_id': tripId,
-        }).toList();
-        
-        await _supabase.from('user_trips').insert(invites);
+        for (var p in _invitedPeople) {
+           try {
+             await NotificationService.sendTripInvite(
+               tripId: tripId,
+               tripName: _nameController.text.trim(),
+               recipientId: p['id'],
+             );
+           } catch (e) {
+             debugPrint('Failed to send invite to ${p['id']}: $e');
+           }
+        }
       }
 
       if (mounted) {

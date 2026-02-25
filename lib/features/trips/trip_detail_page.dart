@@ -176,7 +176,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            widget.title,
+                            _localTitle,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 28,
@@ -185,7 +185,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            widget.date,
+                            _localDate,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -615,8 +615,6 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
 
 
   Widget _buildSettingsList() {
-    _tripNameController.text = widget.title;
-    _tripDateController.text = widget.date;
     final isCreator = _creatorId != null && _supabase.auth.currentUser?.id == _creatorId;
 
     return SliverPadding(
@@ -662,6 +660,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                 TextFormField(
                   controller: _tripDateController,
                   readOnly: true,
+                  onTap: isCreator ? _selectDate : null,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.calendar_today, size: 20),
                   ),
@@ -686,18 +685,7 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                        ),
                        const SizedBox(height: 16),
                        OutlinedButton(
-                         onPressed: () async {
-                           if (_mediaItems.isEmpty) return;
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Starting batch download... check gallery soon.')));
-                           // Download all in parallel
-                           for (var item in _mediaItems) {
-                             final url = item['public_url'];
-                             final isVideo = item['media_type'] == 'video';
-                             if (url != null) {
-                               await _downloadMedia(item['id'], url, isVideo);
-                             }
-                           }
-                         },
+                         onPressed: _downloadAllMedia,
                          style: OutlinedButton.styleFrom(
                            minimumSize: const Size(double.infinity, 48),
                            side: BorderSide(color: Colors.grey.shade300),

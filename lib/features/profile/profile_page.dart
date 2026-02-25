@@ -179,11 +179,12 @@ class _ProfilePageState extends State<ProfilePage> {
               }
 
               return IconButton(
-                onPressed: () {
-                   Navigator.push(
+                onPressed: () async {
+                   await Navigator.push(
                      context,
                      MaterialPageRoute(builder: (_) => const NotificationsPage()),
                    );
+                   _loadProfile();
                 },
                 icon: Badge(
                   isLabelVisible: unreadCount > 0,

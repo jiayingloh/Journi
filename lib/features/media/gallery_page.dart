@@ -245,9 +245,9 @@ class _GalleryPageState extends State<GalleryPage> {
 
   Widget _buildTripCard(BuildContext context, String tripId, String title, String date, String? coverUrl, List<Map<String, String?>> memberAvatars) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         // Navigate to trip detail (to be updated with real ID)
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => TripDetailPage(
@@ -255,10 +255,11 @@ class _GalleryPageState extends State<GalleryPage> {
               title: title,
               date: date,
               coverUrl: coverUrl,
-              coverColor: Colors.blue[100]!, // Fallback
+              coverColor: const Color(0xFFFFEE8C), // Fallback color
             ),
           ),
         );
+        _fetchJoinedTrips();
       },
       child: Container(
       decoration: BoxDecoration(
@@ -282,7 +283,7 @@ class _GalleryPageState extends State<GalleryPage> {
             height: 200, // Fixed height for image
             width: double.infinity,
             decoration: BoxDecoration(
-              color: (coverUrl == null || coverUrl.isEmpty) ? Theme.of(context).primaryColor : Colors.grey[200],
+              color: (coverUrl == null || coverUrl.isEmpty) ? const Color(0xFFFFEE8C) : Colors.grey[200],
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               image: (coverUrl != null && coverUrl.isNotEmpty) 
                 ? DecorationImage(
@@ -299,7 +300,7 @@ class _GalleryPageState extends State<GalleryPage> {
                         title,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Colors.black87,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                         ),
