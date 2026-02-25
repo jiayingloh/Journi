@@ -1,0 +1,60 @@
+name: journi
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Backend
+  supabase_flutter: ^2.0.0
+  
+  # State Management (Optional but good for Controllers)
+  provider: ^6.0.0
+  
+  # Utilities
+  intl: ^0.18.0
+  uuid: ^4.0.0
+  google_fonts: ^8.0.0
+  image_picker: ^1.0.7
+  http: ^1.2.0
+  cached_network_image: ^3.4.1
+  photo_manager: ^3.0.0
+  photo_manager_image_provider: ^2.0.0
+  video_player: ^2.8.0
+  gal: ^2.3.0
+  path_provider: ^2.1.2
+  video_thumbnail: ^0.5.6
+  wakelock_plus: ^1.4.0
+  flutter_background_service: ^5.1.0
+  flutter_local_notifications: ^20.0.0
+  google_sign_in: ^6.2.1
+  app_links: ^6.3.0
+  sliver_tools: ^0.2.12
+  collection: ^1.19.1
+  flutter_image_compress: ^2.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  image_path_android: "assets/images/logo.png"
+  image_path_ios: "assets/images/logo.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/logo.png
+    - assets/images/logo_noBackground.png
