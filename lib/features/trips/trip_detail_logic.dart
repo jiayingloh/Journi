@@ -101,26 +101,50 @@ mixin TripDetailLogic on State<TripDetailPage> {
         }
       }
 
-      // 3. Fetch Media (Paginated)
+      // 3. Fetch Media
       final start = _page * _pageSize;
       final end = start + _pageSize - 1;
 
-      // NOTE: We select specific columns to optimize packet size as requested in Option 2
-      final mediaRes = await _supabase
-          .from('media')
-          .select('id, b2_path, thumbnail_path, uploaded_at, media_type, user_trips!inner(trip_id, user_id, users(name, avatar_url))')
-          .eq('user_trips.trip_id', widget.tripId)
-          .order('uploaded_at', ascending: false)
-          .range(start, end);
-          
-      var newItems = List<Map<String, dynamic>>.from(mediaRes);
-      
-      if (newItems.length < _pageSize) {
-        _hasMore = false;
+      List<Map<String, dynamic>> newItems = [];
+      final user = _supabase.auth.currentUser;
+
+      if (widget.showFavoritesOnly && user != null) {
+        if (_page > 0) {
+           _hasMore = false;
+           if (mounted) setState(() => _isLoadingMore = false);
+           return;
+        }
+
+        final favRes = await _supabase
+            .from('favorites')
+            .select('media_id, media!inner(id, b2_path, thumbnail_path, uploaded_at, media_type, user_trips!inner(trip_id, user_id, users(name, avatar_url)), favorites(user_id))')
+            .eq('user_id', user.id)
+            .eq('media.user_trips.trip_id', widget.tripId);
+            
+        newItems = (favRes as List).map((e) => e['media'] as Map<String, dynamic>).toList();
+        
+        // Sort descending by uploaded_at client-side
+        newItems.sort((a,b) => (b['uploaded_at'] ?? '').toString().compareTo((a['uploaded_at'] ?? '').toString()));
+        _hasMore = false; // We loaded all favorites in one go, disable pagination
+      } else {
+        // NOTE: We select specific columns to optimize packet size
+        final mediaRes = await _supabase
+            .from('media')
+            .select('id, b2_path, thumbnail_path, uploaded_at, media_type, user_trips!inner(trip_id, user_id, users(name, avatar_url)), favorites(user_id)')
+            .eq('user_trips.trip_id', widget.tripId)
+            .order('uploaded_at', ascending: false)
+            .range(start, end);
+            
+        newItems = List<Map<String, dynamic>>.from(mediaRes);
+        
+        if (newItems.length < _pageSize) {
+          _hasMore = false;
+        }
       }
       
       // Resolve Media Items (Sync)
       for (var item in newItems) {
+        item['favorite_count'] = (item['favorites'] as List?)?.length ?? 0;
         item['public_url'] = MediaService.getPublicUrl(item['b2_path']);
         
         final thumb = item['thumbnail_path'] as String?;
@@ -137,25 +161,21 @@ mixin TripDetailLogic on State<TripDetailPage> {
       }
 
       // 4. Fetch Favorites for new items (Batch)
-      final user = _supabase.auth.currentUser;
       Set<String> newLikes = {};
       
       if (user != null && newItems.isNotEmpty) {
-        final mediaIds = newItems.map((e) => e['id']).toList();
-        final favRes = await _supabase
-            .from('favorites')
-            .select('media_id')
-            .eq('user_id', user.id)
-            .filter('media_id', 'in', mediaIds);
-            
-        newLikes = (favRes as List).map((e) => e['media_id'] as String).toSet();
-      }
-
-      // If viewing favorites only, client-side filter (Supabase doesn't easy filtering on inner joins with pagination)
-      // Note: Truly scalable "Favorites Only" needs a different query structure (querying favorites table first).
-      // Given current structure, we just filter.
-      if (widget.showFavoritesOnly) {
-        newItems = newItems.where((m) => newLikes.contains(m['id']) || _likedIds.contains(m['id'])).toList();
+        if (widget.showFavoritesOnly) {
+           newLikes = newItems.map((e) => e['id'] as String).toSet();
+        } else {
+           final mediaIds = newItems.map((e) => e['id']).toList();
+           final favRes = await _supabase
+               .from('favorites')
+               .select('media_id')
+               .eq('user_id', user.id)
+               .filter('media_id', 'in', mediaIds);
+               
+           newLikes = (favRes as List).map((e) => e['media_id'] as String).toSet();
+        }
       }
 
       if (mounted) {
@@ -313,17 +333,53 @@ mixin TripDetailLogic on State<TripDetailPage> {
 
 
 
+  Future<void> _syncFavorites() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null || _mediaItems.isEmpty) return;
+
+    try {
+      final mediaIds = _mediaItems.map((e) => e["id"]).toList();
+      final favRes = await _supabase
+          .from('favorites')
+          .select('media_id')
+          .eq('user_id', user.id)
+          .filter('media_id', 'in', mediaIds);
+          
+      final newLikes = (favRes as List).map((e) => e['media_id'] as String).toSet();
+      
+      if (mounted) {
+        setState(() {
+          _likedIds = newLikes;
+          // If viewing favorites only, remove unliked items
+          if (widget.showFavoritesOnly) {
+            _mediaItems.removeWhere((m) => !_likedIds.contains(m['id']));
+            _updateGroupedMedia();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error syncing favorites: $e');
+    }
+  }
+
   Future<void> _toggleLike(String mediaId) async {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
     
     final isLiked = _likedIds.contains(mediaId);
+    final itemIndex = _mediaItems.indexWhere((m) => m['id'] == mediaId);
     
     setState(() {
       if (isLiked) {
         _likedIds.remove(mediaId);
+        if (itemIndex != -1) {
+           _mediaItems[itemIndex]['favorite_count'] = (_mediaItems[itemIndex]['favorite_count'] as int? ?? 1) - 1;
+        }
       } else {
         _likedIds.add(mediaId);
+        if (itemIndex != -1) {
+           _mediaItems[itemIndex]['favorite_count'] = (_mediaItems[itemIndex]['favorite_count'] as int? ?? 0) + 1;
+        }
       }
     });
 

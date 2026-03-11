@@ -430,8 +430,8 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                                 ),
                               ),
                             );
-                            // Refresh valid for syncing favorites from viewer
-                            _fetchTripData();
+                            // Refresh valid for syncing favorites from viewer without reloading entirely
+                            _syncFavorites();
                         }
                      },
                      child: Container(
@@ -481,10 +481,27 @@ class _TripDetailPageState extends State<TripDetailPage> with AutomaticKeepAlive
                                  right: 8,
                                  child: GestureDetector(
                                    onTap: () => _toggleLike(item['id']),
-                                   child: Icon(
-                                     _likedIds.contains(item['id']) ? Icons.favorite : Icons.favorite_border,
-                                     color: _likedIds.contains(item['id']) ? Colors.red : Colors.white,
-                                     size: 20
+                                   child: Row(
+                                     mainAxisSize: MainAxisSize.min,
+                                     children: [
+                                       if ((item['favorite_count'] ?? 0) > 0) ...[
+                                         Text(
+                                           '${item['favorite_count']}',
+                                           style: const TextStyle(
+                                             color: Colors.white,
+                                             fontSize: 12,
+                                             fontWeight: FontWeight.bold,
+                                             shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+                                           ),
+                                         ),
+                                         const SizedBox(width: 4),
+                                       ],
+                                       Icon(
+                                         _likedIds.contains(item['id']) ? Icons.favorite : Icons.favorite_border,
+                                         color: _likedIds.contains(item['id']) ? Colors.red : Colors.white,
+                                         size: 20
+                                       ),
+                                     ],
                                    ),
                                  ),
                                ),

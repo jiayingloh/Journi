@@ -85,11 +85,15 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
             .delete()
             .eq('user_id', user.id)
             .eq('media_id', mediaId);
+            
+        item['favorite_count'] = (item['favorite_count'] as int? ?? 1) - 1;
       } else {
         // Like
         await _supabase
             .from('favorites')
             .insert({'user_id': user.id, 'media_id': mediaId});
+            
+        item['favorite_count'] = (item['favorite_count'] as int? ?? 0) + 1;
       }
 
       if (mounted) {
@@ -301,13 +305,28 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
           // Actions (Bottom Right)
           Row(
             children: [
-              IconButton(
-                icon: Icon(
-                  _isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _isLiked ? Colors.red : Colors.white,
-                  size: 30,
-                ),
-                onPressed: _toggleFavorite,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if ((item['favorite_count'] ?? 0) > 0)
+                    Text(
+                      '${item['favorite_count']}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                      ),
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      _isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: _isLiked ? Colors.red : Colors.white,
+                      size: 30,
+                    ),
+                    onPressed: _toggleFavorite,
+                  ),
+                ],
               ),
               const SizedBox(width: 8),
               IconButton(
