@@ -39,20 +39,35 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
         
-    _listenForNotifications();
+    // Listen to Auth State to initialize listeners
+    _supabase.auth.onAuthStateChange.listen((data) {
+      if (data.session?.user.id != null) {
+        _listenForNotifications(data.session!.user.id);
+      }
+    });
   }
 
-  static void _listenForNotifications() {
-    _supabase
-        .from('notifications')
-        .stream(primaryKey: ['id'])
-        .eq('recipient_id', _supabase.auth.currentUser?.id ?? '')
-        .order('created_at')
-        .listen((data) {});
-        
-    _supabase
-        .channel('public:notifications')
+  static RealtimeChannel? _realtimeChannel;
+  static bool _isListening = false;
+
+  static void _listenForNotifications(String userId) {
+    if (_isListening) return; // Prevent duplicate listeners
+    _isListening = true;
+    
+    // Clean up old channel if exists
+    _realtimeChannel?.unsubscribe();
+
+    _realtimeChannel = _supabase
+        .channel('public:notifications_$userId')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
@@ -60,7 +75,7 @@ class NotificationService {
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'recipient_id',
-            value: _supabase.auth.currentUser?.id ?? '',
+            value: userId,
           ),
           callback: (payload) {
              final newRecord = payload.newRecord;
@@ -71,8 +86,9 @@ class NotificationService {
                payload: newRecord['trip_id'],
              );
           },
-        )
-        .subscribe();
+        );
+    
+    _realtimeChannel!.subscribe();
   }
 
 // ...

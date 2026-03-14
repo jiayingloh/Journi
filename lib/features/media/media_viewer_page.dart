@@ -115,10 +115,11 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
 
       if (url == null) return;
       
-      // Request Request
-      if (!await Gal.hasAccess()) {
-        await Gal.requestAccess();
+      bool hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        hasAccess = await Gal.requestAccess();
       }
+      if (!hasAccess) throw 'Gallery permission is required to save media.';
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,13 +132,21 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
       if (response.statusCode != 200) throw 'Failed to download file';
 
       final tempDir = await getTemporaryDirectory();
-      // Determine extension
+      
       String ext = type == 'video' ? 'mp4' : 'jpg';
-      if (url.contains('.')) {
+      final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+      if (contentType.contains('png')) ext = 'png';
+      else if (contentType.contains('jpeg') || contentType.contains('jpg')) ext = 'jpg';
+      else if (contentType.contains('heic')) ext = 'heic';
+      else if (contentType.contains('webp')) ext = 'webp';
+      else if (contentType.contains('gif')) ext = 'gif';
+      else if (contentType.contains('mp4')) ext = 'mp4';
+      else if (contentType.contains('mov') || contentType.contains('quicktime')) ext = 'mov';
+      else if (url.contains('.')) {
          final uri = Uri.parse(url);
          final lastSegment = uri.pathSegments.last;
          if (lastSegment.contains('.')) {
-           ext = lastSegment.split('.').last;
+           ext = lastSegment.split('.').last.toLowerCase();
          }
       }
       

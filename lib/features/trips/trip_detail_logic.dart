@@ -408,10 +408,11 @@ mixin TripDetailLogic on State<TripDetailPage> {
     if (url == null || _downloadedIds.contains(mediaId)) return;
     
     try {
-       // Check Access
-       if (!await Gal.hasAccess()) {
-         await Gal.requestAccess();
+       bool hasAccess = await Gal.hasAccess();
+       if (!hasAccess) {
+         hasAccess = await Gal.requestAccess();
        }
+       if (!hasAccess) throw 'Gallery permission is required';
        
        if (showSnackbar && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Downloading...'), duration: Duration(seconds: 1)));
 
@@ -421,11 +422,19 @@ mixin TripDetailLogic on State<TripDetailPage> {
        
        final tempDir = await getTemporaryDirectory();
        String ext = isVideo ? 'mp4' : 'jpg';
-       // Try parse extension
-       if (url.contains('.')) {
+       
+       final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+       if (contentType.contains('png')) ext = 'png';
+       else if (contentType.contains('jpeg') || contentType.contains('jpg')) ext = 'jpg';
+       else if (contentType.contains('heic')) ext = 'heic';
+       else if (contentType.contains('webp')) ext = 'webp';
+       else if (contentType.contains('gif')) ext = 'gif';
+       else if (contentType.contains('mp4')) ext = 'mp4';
+       else if (contentType.contains('mov') || contentType.contains('quicktime')) ext = 'mov';
+       else if (url.contains('.')) {
           final uri = Uri.parse(url);
           final last = uri.pathSegments.last;
-          if (last.contains('.')) ext = last.split('.').last;
+          if (last.contains('.')) ext = last.split('.').last.toLowerCase();
        }
 
        final file = File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.$ext');
@@ -454,8 +463,13 @@ mixin TripDetailLogic on State<TripDetailPage> {
   Future<void> _downloadAllMedia() async {
     if (_mediaItems.isEmpty) return;
     
-    if (!await Gal.hasAccess()) {
-      await Gal.requestAccess();
+    bool hasAccess = await Gal.hasAccess();
+    if (!hasAccess) {
+      hasAccess = await Gal.requestAccess();
+    }
+    if (!hasAccess) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gallery permission required')));
+      return;
     }
 
     if (mounted) {

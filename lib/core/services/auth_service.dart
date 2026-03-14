@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 import '../config/supabase_config.dart';
 import '../utils/logger.dart';
 
@@ -69,6 +70,7 @@ class AuthService {
       // For Android, ensure you've added the SHA-1 fingerprint in the Firebase/Google Cloud Console.
       // For iOS, ensure you've added the reversed client ID to your URL schemes.
       final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: Platform.isIOS ? SupabaseConfig.googleIosClientId : null,
         serverClientId: SupabaseConfig.googleWebClientId,
       );
 

@@ -1,0 +1,26 @@
+Alias name: upload
+Creation date: Mar 12, 2026
+Entry type: PrivateKeyEntry
+Certificate chain length: 1
+Certificate[1]:
+Owner: CN=Journi Developer, OU=Journi, O=Journi App, L=Unknown, ST=Unknown, C=Unknown
+Issuer: CN=Journi Developer, OU=Journi, O=Journi App, L=Unknown, ST=Unknown, C=Unknown
+Serial number: a6a5f04
+Valid from: Thu Mar 12 14:22:41 SGT 2026 until: Mon Jul 28 14:22:41 SGT 2053
+Certificate fingerprints:
+	 SHA1: AA:6C:9C:F6:4D:A0:C6:31:EC:1C:51:1A:B5:36:D3:FB:1B:83:70:31
+	 SHA256: 5D:EA:38:B3:54:BC:D2:55:0E:E1:45:5E:85:71:69:4A:5E:F6:2E:04:12:22:5E:3F:B0:7D:69:61:F1:39:3F:02
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+Version: 3
+
+Extensions: 
+
+#1: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 52 EE 6A FD 37 09 57 DB   E6 30 9D 31 9C 2C 1A D3  R.j.7.W..0.1.,..
+0010: 49 48 D0 D0                                        IH..
+]
+]
+
