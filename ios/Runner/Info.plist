@@ -55,6 +55,9 @@
 	<string>Journi requires microphone access to record audio when capturing videos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Journi requires access to save photos to your photo library.</string>
+	<!-- Suppress the automatic iOS "Select More Photos" system alert — we show our own banner -->
+	<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+	<true/>
 
 	<key>CFBundleURLTypes</key>
 	<array>

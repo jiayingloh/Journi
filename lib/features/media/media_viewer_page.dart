@@ -10,6 +10,49 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/services/media_service.dart';
 
+/// Requests gallery save permission, handling iOS-specific quirks.
+/// Returns true if the app can save to the gallery.
+/// Shows a Settings dialog if permission is permanently denied.
+Future<bool> _requestGalPermission(BuildContext context) async {
+  // On iOS, Gal.hasAccess() checks for "Add Photos Only" auth.
+  // If the user only granted "Limited" library access (not add-only),
+  // this returns false. We must call requestAccess() which may show the
+  // system prompt. If it still fails, the only recourse is Settings.
+  try {
+    if (await Gal.hasAccess()) return true;
+    if (await Gal.requestAccess()) return true;
+  } catch (_) {}
+
+  // Permission denied — guide user to Settings
+  if (context.mounted) {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: const Text(
+          'Journi needs permission to save photos & videos to your library.\n\n'
+          'Please go to Settings → Journi → Photos and choose "Add Photos Only" or "All Photos".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // Open app settings so the user can change the permission
+              Gal.open(); 
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+  return false;
+}
+
 class MediaViewerPage extends StatefulWidget {
   final List<Map<String, dynamic>> mediaItems;
   final int initialIndex;
@@ -113,13 +156,11 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
       final url = item['public_url'] as String? ?? MediaService.getPublicUrl(item['b2_path']);
       final type = item['media_type'] as String?; // 'image' or 'video'
 
-      if (url == null) return;
-      
-      bool hasAccess = await Gal.hasAccess();
-      if (!hasAccess) {
-        hasAccess = await Gal.requestAccess();
-      }
-      if (!hasAccess) throw 'Gallery permission is required to save media.';
+      if (url == null || url.isEmpty) return;
+
+      // Check / request permission (shows Settings dialog if denied)
+      final hasAccess = await _requestGalPermission(context);
+      if (!hasAccess) return;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,7 +202,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
       }
       
       // Cleanup temp file
-      await file.delete(); 
+      await file.delete();
 
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();

@@ -22,6 +22,7 @@ class _CustomGalleryPickerState extends State<CustomGalleryPicker> {
   final List<AssetEntity> _selectedEntities = [];
   bool _isLoading = true;
   bool _hasPermission = false;
+  bool _isLimitedAccess = false;
 
   int _currentPage = 0;
   final int _pageSize = 80;
@@ -47,11 +48,18 @@ class _CustomGalleryPickerState extends State<CustomGalleryPicker> {
     
     // 1. Request Permission
     final result = await PhotoManager.requestPermissionExtend();
-    if (!result.isAuth) {
+
+    // On iOS 14+, users can grant "Limited" access (specific photos only).
+    // result.isAuth is false for limited, so we must check both states.
+    final bool hasAccess = result == PermissionState.authorized ||
+        result == PermissionState.limited;
+
+    if (!hasAccess) {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
     _hasPermission = true;
+    _isLimitedAccess = result == PermissionState.limited;
 
     // 2. Fetch Albums (use only the first one "Recent" for now)
     List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
@@ -143,14 +151,60 @@ class _CustomGalleryPickerState extends State<CustomGalleryPicker> {
       ),
       body: _isLoading && _entities.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : !_hasPermission 
-             ? Center(
-                 child: TextButton(
-                   onPressed: () => _fetchAssets(refresh: true),
-                   child: const Text('Grant Permission'),
-                 ),
-               )
-             : NotificationListener<ScrollNotification>(
+          : !_hasPermission
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.photo_library_outlined, size: 64, color: Colors.white38),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Photo access is required.',
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () async {
+                          await PhotoManager.openSetting();
+                        },
+                        child: const Text(
+                          'Open Settings',
+                          style: TextStyle(color: Colors.blue, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    if (_isLimitedAccess)
+                      Material(
+                        color: Colors.grey[900],
+                        child: InkWell(
+                          onTap: () async {
+                            await PhotoManager.presentLimited();
+                            _fetchAssets(refresh: true);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'You\'ve granted limited access. Tap to select more photos.',
+                                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right, color: Colors.white38, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: NotificationListener<ScrollNotification>(
                  onNotification: (ScrollNotification scroll) {
                    if (!_isLoading && _hasMore &&
                        scroll.metrics.pixels >= scroll.metrics.maxScrollExtent - 200) {
@@ -220,8 +274,11 @@ class _CustomGalleryPickerState extends State<CustomGalleryPicker> {
                 ),
               );
             },
-               ), // GridView
-            ), // NotificationListener
+                   ), // GridView
+                  ), // NotificationListener
+                ), // Expanded
+              ], // Column children
+            ), // Column
     ); // Scaffold
   }
 

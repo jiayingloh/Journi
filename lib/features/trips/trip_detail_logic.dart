@@ -408,11 +408,36 @@ mixin TripDetailLogic on State<TripDetailPage> {
     if (url == null || _downloadedIds.contains(mediaId)) return;
     
     try {
-       bool hasAccess = await Gal.hasAccess();
+       // hasAccess() on iOS checks "Add Photos Only" auth — not just "Limited" library access.
+       // If denied, show a helpful Settings dialog rather than throwing a silent error.
+       bool hasAccess = false;
+       try {
+         hasAccess = await Gal.hasAccess();
+         if (!hasAccess) hasAccess = await Gal.requestAccess();
+       } catch (_) {}
+
        if (!hasAccess) {
-         hasAccess = await Gal.requestAccess();
+         if (mounted) {
+           await showDialog(
+             context: context,
+             builder: (ctx) => AlertDialog(
+               title: const Text('Permission Required'),
+               content: const Text(
+                 'Journi needs permission to save to your photo library.\n\n'
+                 'Go to Settings → Journi → Photos and choose "Add Photos Only" or "All Photos".',
+               ),
+               actions: [
+                 TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                 TextButton(
+                   onPressed: () { Navigator.pop(ctx); Gal.open(); },
+                   child: const Text('Open Settings'),
+                 ),
+               ],
+             ),
+           );
+         }
+         return;
        }
-       if (!hasAccess) throw 'Gallery permission is required';
        
        if (showSnackbar && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Downloading...'), duration: Duration(seconds: 1)));
 
@@ -463,12 +488,33 @@ mixin TripDetailLogic on State<TripDetailPage> {
   Future<void> _downloadAllMedia() async {
     if (_mediaItems.isEmpty) return;
     
-    bool hasAccess = await Gal.hasAccess();
+    // Check / request permission once before bulk download
+    bool hasAccess = false;
+    try {
+      hasAccess = await Gal.hasAccess();
+      if (!hasAccess) hasAccess = await Gal.requestAccess();
+    } catch (_) {}
+
     if (!hasAccess) {
-      hasAccess = await Gal.requestAccess();
-    }
-    if (!hasAccess) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gallery permission required')));
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Permission Required'),
+            content: const Text(
+              'Journi needs permission to save to your photo library.\n\n'
+              'Go to Settings → Journi → Photos and choose "Add Photos Only" or "All Photos".',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () { Navigator.pop(ctx); Gal.open(); },
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        );
+      }
       return;
     }
 
